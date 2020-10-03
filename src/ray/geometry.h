@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ray/material.h"
 #include "ray/types.h"
 #include <memory>
 
@@ -9,6 +10,7 @@ struct Hit
 {
 	double t;
 	vec3 point, normal;
+	Material const *material = nullptr;
 };
 
 class Geometry
@@ -22,9 +24,12 @@ class Sphere : public Geometry
 {
 	vec3 center_;
 	double radius_;
+	Material material_;
 
   public:
-	Sphere(vec3 center, double radius) : center_(center), radius_(radius) {}
+	Sphere(vec3 center, double radius, Material const &material)
+	    : center_(center), radius_(radius), material_(material)
+	{}
 
 	bool intersect(Ray const &ray, Hit &hit) const override
 	{
@@ -45,6 +50,7 @@ class Sphere : public Geometry
 		hit.t = t;
 		hit.point = ray(hit.t);
 		hit.normal = glm::normalize(hit.point - center_);
+		hit.material = &material_;
 		return true;
 	}
 };
@@ -52,9 +58,12 @@ class Sphere : public Geometry
 class Plane : public Geometry
 {
 	vec3 origin_, normal_;
+	Material material_;
 
   public:
-	Plane(vec3 origin, vec3 const &normal) : origin_(origin), normal_(normal) {}
+	Plane(vec3 origin, vec3 const &normal, Material const &material)
+	    : origin_(origin), normal_(normal), material_(material)
+	{}
 
 	bool intersect(Ray const &ray, Hit &hit) const override
 	{
@@ -66,6 +75,7 @@ class Plane : public Geometry
 		hit.t = t;
 		hit.point = ray(t);
 		hit.normal = normal_;
+		hit.material = &material_;
 		return true;
 	}
 };

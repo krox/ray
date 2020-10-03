@@ -42,25 +42,83 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 	hit.t = std::numeric_limits<double>::infinity();
 	if (world.intersect(ray, hit))
 	{
-		if (glm::dot(hit.normal, ray.dir) > 0)
+		if (glm::dot(hit.normal, ray.dir) > 0) // should never happen (?)
 			hit.normal *= -1.0;
-
 		assert(glm::abs(glm::length(hit.normal) - 1.0) < 0.0001);
+		if (hit.material == nullptr)
+			return vec3{1, 0, 1};
+		assert(hit.material != nullptr);
+		auto &mat = *hit.material;
 
-		vec3 reflect =
-		    ray.dir - 2.0 * hit.normal * glm::dot(hit.normal, ray.dir);
-		reflect = glm::normalize(reflect);
-		auto new_ray = Ray(hit.point, reflect);
-		new_ray.origin = new_ray(0.001);
-
+		auto reflect_ray = Ray(hit.point, glm::reflect(ray.dir, hit.normal));
 		auto diffuse_ray = Ray(hit.point, hit.normal + random_sphere(rng));
+
+		reflect_ray.origin = reflect_ray(0.001);
 		diffuse_ray.origin = diffuse_ray(0.001);
-		return 0.5 * sample(world, diffuse_ray, depth - 1) +
-		       0.0 * sample(world, new_ray, -1000) + 0.0 * vec3(1, 1, 1);
+
+		vec3 color = {0, 0, 0};
+		if (mat.glow)
+			color += mat.glow->sample();
+		if (mat.diffuse)
+			color +=
+			    mat.diffuse->sample() * sample(world, diffuse_ray, depth - 1);
+		if (mat.reflective)
+			color += mat.reflective->sample() *
+			         sample(world, reflect_ray, depth - 1);
+		return color;
 	}
 
+	// return {0, 0, 0};
 	auto t = 0.5 * (glm::normalize(ray.dir).z + 1.0);
 	return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+}
+
+GeometrySet build_scene()
+{
+	GeometrySet world = {};
+	Material mat = {};
+	auto rng = RNG(8);
+
+	mat.diffuse = std::make_shared<Constant>(vec3{0.5, 0.5, 0.5});
+	mat.reflective = nullptr;
+	mat.glow = std::make_shared<Constant>(vec3{0.0, 0.5, 0.0});
+	world.add(std::make_shared<Sphere>(vec3{-0.5, 0, 0.8}, 0.5, mat));
+
+	mat.diffuse = std::make_shared<Constant>(vec3{0.3, 0.1, 0.2});
+	mat.reflective = std::make_shared<Constant>(vec3{0.3, 0.2, 0.2});
+	mat.glow = nullptr;
+	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.5, mat));
+
+	mat.diffuse = std::make_shared<Constant>(vec3{0.5, 0.5, 0.5});
+	mat.reflective = nullptr;
+	mat.glow = nullptr;
+	world.add(std::make_shared<Plane>(vec3{0, 0, 0}, vec3{0, 0, 1}, mat));
+
+	mat.reflective = nullptr;
+	mat.glow = nullptr;
+	auto dist = std::uniform_real_distribution<double>(0., 1.);
+
+	for (int i = -4; i < 4; ++i)
+		for (int j = -4; j < 4; ++j)
+		{
+
+			if (dist(rng) < 0.3)
+			{
+				mat.diffuse = nullptr;
+				mat.reflective =
+				    std::make_shared<Constant>(vec3(0.5, 0.5, 0.5));
+			}
+			else
+			{
+				mat.diffuse = std::make_shared<Constant>(
+				    vec3{dist(rng), dist(rng), dist(rng)});
+				mat.reflective = nullptr;
+			}
+			world.add(std::make_shared<Sphere>(
+			    vec3{i + dist(rng), j + dist(rng), 0.2}, 0.2, mat));
+		}
+
+	return world;
 }
 
 int main()
@@ -71,10 +129,7 @@ int main()
 	double fov = 3.141592654 * 0.5;
 	auto camera = Camera({0, -2, 0.5}, {0, 0, 0.5}, fov, 640. / 480.);
 
-	GeometrySet world = {};
-	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.5));
-	world.add(std::make_shared<Sphere>(vec3{-0.5, 0, 0.8}, 0.5));
-	world.add(std::make_shared<Plane>(vec3{0, 0, 0}, vec3{0, 0, 1}));
+	auto world = build_scene();
 
 	int sample_count = 10;
 
