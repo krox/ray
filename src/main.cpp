@@ -3,6 +3,7 @@
 #include "ray/window.h"
 #include "util/random.h"
 #include "util/span.h"
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <random>
@@ -123,7 +124,7 @@ GeometrySet build_scene()
 
 int main()
 {
-	auto image_raw = std::vector<vec3>(640 * 480);
+	auto image_raw = std::vector<vec3>(640 * 480, vec3{0, 0, 0});
 	auto image = util::ndspan<vec3, 2>(image_raw, {480, 640});
 
 	double fov = 3.141592654 * 0.5;
@@ -131,23 +132,27 @@ int main()
 
 	auto world = build_scene();
 
-	int sample_count = 10;
-
 	auto jitter = std::uniform_real_distribution<double>(0., 1.);
-	for (int i = 0; i < 480; ++i)
-		for (int j = 0; j < 640; ++j)
-		{
-			vec3 color = vec3{0, 0, 0};
-			for (int k = 0; k < sample_count; ++k)
+
+	auto window = Window("Result", 640, 480);
+
+	int sample_count = 100;
+	for (int sample_iter = 1; sample_iter <= sample_count; ++sample_iter)
+	{
+		for (int i = 0; i < 480; ++i)
+			for (int j = 0; j < 640; ++j)
 			{
 				auto ray = camera.ray((j + jitter(rng)) / 640.,
 				                      (i + jitter(rng)) / 480.);
-				color += sample(world, ray);
+				image(i, j) += sample(world, ray);
 			}
+		window.update(image, 1. / sample_iter);
 
-			image(i, j) = color / (double)sample_count;
-		}
-	show_window(image);
+		fmt::print("{} / {}\r", sample_iter, sample_count);
+		std::cout.flush();
+	}
+	fmt::print("\nall done\n");
 
+	window.join();
 	return 0;
 }

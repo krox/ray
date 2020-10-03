@@ -18,4 +18,4 @@ include_directories(glm)
 file(GLOB files_cpp "src/ray/*.cpp")
 
 add_executable(ray src/main.cpp ${files_cpp})
-target_link_libraries(ray util fmt SDL2)
+target_link_libraries(ray util fmt SDL2 pthread)
