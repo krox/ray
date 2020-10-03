@@ -1,0 +1,9 @@
+[submodule "util"]
+	path = util
+	url = git@github.com:krox/util
+[submodule "fmt"]
+	path = fmt
+	url = git@github.com:fmtlib/fmt
+[submodule "glm"]
+	path = glm
+	url = git@github.com:g-truc/glm.git
