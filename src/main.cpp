@@ -137,7 +137,8 @@ int main()
 	auto window = Window("Result", 640, 480);
 
 	int sample_count = 100;
-	for (int sample_iter = 1; sample_iter <= sample_count; ++sample_iter)
+	for (int sample_iter = 1; sample_iter <= sample_count && !window.quit;
+	     ++sample_iter)
 	{
 		for (int i = 0; i < 480; ++i)
 			for (int j = 0; j < 640; ++j)

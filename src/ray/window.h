@@ -4,6 +4,7 @@
 
 #include "util/span.h"
 #include <SDL2/SDL.h>
+#include <atomic>
 #include <thread>
 
 namespace ray {
@@ -56,7 +57,7 @@ class Window
 		auto pixels = std::vector<uint32_t>(width_ * height_, 0);
 		SDL_UpdateTexture(texture, NULL, pixels.data(),
 		                  width_ * sizeof(uint32_t));
-		for (bool quit = false; !quit;)
+		while (!quit)
 		{
 			SDL_Event event;
 			SDL_WaitEvent(&event);
@@ -87,6 +88,8 @@ class Window
 	}
 
   public:
+	std::atomic<bool> quit = false;
+
 	Window(std::string title, int width, int height)
 	    : title_(title), width_(width), height_(height),
 	      thread([this] { run(); })
