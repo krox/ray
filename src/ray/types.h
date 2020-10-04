@@ -9,6 +9,7 @@
 namespace ray {
 
 using vec3 = glm::dvec3;
+using vec2 = glm::dvec2;
 using glm::dot, glm::cross, glm::cos, glm::sin, glm::tan;
 using RNG = util::xoshiro256;
 

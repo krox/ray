@@ -10,6 +10,7 @@ struct Hit
 {
 	double t;
 	vec3 point, normal;
+	vec2 uv;
 	Material const *material = nullptr;
 };
 
@@ -75,6 +76,7 @@ class Plane : public Geometry
 		hit.t = t;
 		hit.point = ray(t);
 		hit.normal = normal_;
+		hit.uv = vec2(hit.point.x, hit.point.y);
 		hit.material = &material_;
 		return true;
 	}

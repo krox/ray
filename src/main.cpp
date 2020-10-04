@@ -59,12 +59,12 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 
 		vec3 color = {0, 0, 0};
 		if (mat.glow)
-			color += mat.glow->sample();
+			color += mat.glow->sample(hit.uv);
 		if (mat.diffuse)
-			color +=
-			    mat.diffuse->sample() * sample(world, diffuse_ray, depth - 1);
+			color += mat.diffuse->sample(hit.uv) *
+			         sample(world, diffuse_ray, depth - 1);
 		if (mat.reflective)
-			color += mat.reflective->sample() *
+			color += mat.reflective->sample(hit.uv) *
 			         sample(world, reflect_ray, depth - 1);
 		return color;
 	}
