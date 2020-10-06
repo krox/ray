@@ -51,21 +51,28 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 		assert(hit.material != nullptr);
 		auto &mat = *hit.material;
 
-		auto reflect_ray = Ray(hit.point, glm::reflect(ray.dir, hit.normal));
-		auto diffuse_ray = Ray(hit.point, hit.normal + random_sphere(rng));
-
-		reflect_ray.origin = reflect_ray(0.001);
-		diffuse_ray.origin = diffuse_ray(0.001);
-
 		vec3 color = {0, 0, 0};
 		if (mat.glow)
 			color += mat.glow->sample(hit.uv);
 		if (mat.diffuse)
-			color += mat.diffuse->sample(hit.uv) *
-			         sample(world, diffuse_ray, depth - 1);
+		{
+			auto new_ray = Ray(hit.point, hit.normal + random_sphere(rng));
+			new_ray.origin = new_ray(0.001);
+			auto albedo = mat.diffuse->sample(hit.uv);
+			color += albedo * sample(world, new_ray, depth - 1);
+		}
 		if (mat.reflective)
-			color += mat.reflective->sample(hit.uv) *
-			         sample(world, reflect_ray, depth - 1);
+		{
+			auto new_ray = Ray(
+			    hit.point, glm::normalize(glm::reflect(ray.dir, hit.normal)) +
+			                   mat.fuzz * random_sphere(rng));
+			if (glm::dot(new_ray.dir, hit.normal) > 0)
+			{
+				new_ray.origin = new_ray(0.001);
+				auto albedo = mat.reflective->sample(hit.uv);
+				color += albedo * sample(world, new_ray, depth - 1);
+			}
+		}
 		return color;
 	}
 
@@ -85,8 +92,9 @@ GeometrySet build_scene()
 	mat.glow = std::make_shared<Constant>(vec3{0.0, 0.5, 0.0});
 	world.add(std::make_shared<Sphere>(vec3{-0.5, 0, 0.8}, 0.5, mat));
 
-	mat.diffuse = std::make_shared<Constant>(vec3{0.1, 0.1, 0.1});
-	mat.reflective = std::make_shared<Constant>(vec3{0.3, 0.3, 0.3});
+	mat.diffuse = nullptr;
+	mat.reflective = std::make_shared<Constant>(vec3{0.4, 0.5, 0.4});
+	mat.fuzz = 0.05;
 	mat.glow = nullptr;
 	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.3, mat));
 	world.add(std::make_shared<Cylinder>(vec3{0.5, 0, 0.5}, 0.3, 0.6, mat));
@@ -110,6 +118,7 @@ GeometrySet build_scene()
 				mat.diffuse = nullptr;
 				mat.reflective =
 				    std::make_shared<Constant>(vec3(0.5, 0.5, 0.5));
+				mat.fuzz = 0.1;
 			}
 			else
 			{
