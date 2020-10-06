@@ -85,10 +85,12 @@ GeometrySet build_scene()
 	mat.glow = std::make_shared<Constant>(vec3{0.0, 0.5, 0.0});
 	world.add(std::make_shared<Sphere>(vec3{-0.5, 0, 0.8}, 0.5, mat));
 
-	mat.diffuse = std::make_shared<Constant>(vec3{0.3, 0.1, 0.2});
-	mat.reflective = std::make_shared<Constant>(vec3{0.3, 0.2, 0.2});
+	mat.diffuse = std::make_shared<Constant>(vec3{0.1, 0.1, 0.1});
+	mat.reflective = std::make_shared<Constant>(vec3{0.3, 0.3, 0.3});
 	mat.glow = nullptr;
-	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.5, mat));
+	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.3, mat));
+	world.add(std::make_shared<Cylinder>(vec3{0.5, 0, 0.5}, 0.3, 0.6, mat));
+	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 1.1}, 0.3, mat));
 
 	mat.diffuse = std::make_shared<Constant>(vec3{0.5, 0.5, 0.5});
 	mat.reflective = nullptr;

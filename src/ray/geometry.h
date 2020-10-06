@@ -56,6 +56,52 @@ class Sphere : public Geometry
 	}
 };
 
+class Cylinder : public Geometry
+{
+	vec3 origin_;
+	double radius_;
+	double height_;
+	Material material_;
+
+  public:
+	Cylinder(vec3 const &origin, double radius, double height,
+	         Material const &material)
+	    : origin_(origin), radius_(radius), height_(height), material_(material)
+	{}
+
+	bool intersect(Ray const &ray, Hit &hit) const override
+	{
+		// create equation in the form a*t^2 + 2*b*t + c = 0
+		vec3 oc = ray.origin - origin_;
+		auto oc_xy = vec2(oc.x, oc.y);
+		auto dir_xy = vec2(ray.dir.x, ray.dir.y);
+		auto a = glm::dot(dir_xy, dir_xy);
+		auto b = glm::dot(oc_xy, dir_xy);
+		auto c = glm::dot(oc_xy, oc_xy) - radius_ * radius_;
+		auto d = b * b - a * c;
+
+		if (d < 0)
+			return false; // miss infinite cylinder
+
+		double t = (-b - glm::sqrt(d)) / a;
+
+		// point not in relevant ray segment
+		if (t <= 0 || t > hit.t)
+			return false;
+
+		vec3 p = ray(t);
+		auto po = p - origin_;
+		if (po.z < 0 || po.z > height_)
+			return false;
+
+		hit.t = t;
+		hit.point = p;
+		hit.normal = glm::normalize(vec3{po.x, po.y, 0.});
+		hit.material = &material_;
+		return true;
+	}
+};
+
 class Plane : public Geometry
 {
 	vec3 origin_, normal_;
