@@ -18,7 +18,8 @@ class Constant : public TextureBase
 	vec3 color_;
 
   public:
-	Constant(vec3 const &color) : color_(color) {}
+	explicit Constant(double c) : color_{c, c, c} {}
+	explicit Constant(vec3 const &color) : color_{color} {}
 	vec3 sample(vec2) const override { return color_; }
 };
 
@@ -35,7 +36,7 @@ class Texture2D : public TextureBase
 	std::vector<vec3> data_;
 
   public:
-	Texture2D(std::string const &filename)
+	explicit Texture2D(std::string const &filename)
 	{
 		// load file
 		int chan; // color channels of the file. we get stb to convert it to 3

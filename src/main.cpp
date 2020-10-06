@@ -1,4 +1,5 @@
 #include "ray/geometry.h"
+#include "ray/scene.h"
 #include "ray/types.h"
 #include "ray/window.h"
 #include "util/random.h"
@@ -7,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <random>
+
 using namespace ray;
 
 class Camera
@@ -76,61 +78,9 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 		return color;
 	}
 
-	// return {0, 0, 0};
-	auto t = 0.5 * (glm::normalize(ray.dir).z + 1.0);
-	return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
-}
-
-GeometrySet build_scene()
-{
-	GeometrySet world = {};
-	Material mat = {};
-	auto rng = RNG(8);
-
-	mat.diffuse = std::make_shared<Constant>(vec3{0.5, 0.5, 0.5});
-	mat.reflective = nullptr;
-	mat.glow = std::make_shared<Constant>(vec3{0.0, 0.5, 0.0});
-	world.add(std::make_shared<Sphere>(vec3{-0.5, 0, 0.8}, 0.5, mat));
-
-	mat.diffuse = nullptr;
-	mat.reflective = std::make_shared<Constant>(vec3{0.4, 0.5, 0.4});
-	mat.fuzz = 0.05;
-	mat.glow = nullptr;
-	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 0.5}, 0.3, mat));
-	world.add(std::make_shared<Cylinder>(vec3{0.5, 0, 0.5}, 0.3, 0.6, mat));
-	world.add(std::make_shared<Sphere>(vec3{0.5, 0, 1.1}, 0.3, mat));
-
-	mat.diffuse = std::make_shared<Constant>(vec3{0.5, 0.5, 0.5});
-	mat.reflective = nullptr;
-	mat.glow = nullptr;
-	world.add(std::make_shared<Plane>(vec3{0, 0, 0}, vec3{0, 0, 1}, mat));
-
-	mat.reflective = nullptr;
-	mat.glow = nullptr;
-	auto dist = std::uniform_real_distribution<double>(0., 1.);
-
-	for (int i = -4; i < 4; ++i)
-		for (int j = -4; j < 4; ++j)
-		{
-
-			if (dist(rng) < 0.3)
-			{
-				mat.diffuse = nullptr;
-				mat.reflective =
-				    std::make_shared<Constant>(vec3(0.5, 0.5, 0.5));
-				mat.fuzz = 0.1;
-			}
-			else
-			{
-				mat.diffuse = std::make_shared<Constant>(
-				    vec3{dist(rng), dist(rng), dist(rng)});
-				mat.reflective = nullptr;
-			}
-			world.add(std::make_shared<Sphere>(
-			    vec3{i + dist(rng), j + dist(rng), 0.2}, 0.2, mat));
-		}
-
-	return world;
+	return {0, 0, 0};
+	// auto t = 0.5 * (glm::normalize(ray.dir).z + 1.0);
+	// return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 }
 
 int main()
@@ -141,7 +91,8 @@ int main()
 	double fov = 3.141592654 * 0.5;
 	auto camera = Camera({0, -2, 0.5}, {0, 0, 0.5}, fov, 640. / 480.);
 
-	auto world = build_scene();
+	// auto world = build_scene();
+	auto world = load_scene("../assets/scenes/test.json");
 
 	auto jitter = std::uniform_real_distribution<double>(0., 1.);
 
