@@ -83,7 +83,7 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 	// return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
 	auto image_raw = std::vector<vec3>(640 * 480, vec3{0, 0, 0});
 	auto image = util::ndspan<vec3, 2>(image_raw, {480, 640});
@@ -91,8 +91,12 @@ int main()
 	double fov = 3.141592654 * 0.5;
 	auto camera = Camera({0, -2, 0.5}, {0, 0, 0.5}, fov, 640. / 480.);
 
-	// auto world = build_scene();
-	auto world = load_scene("../assets/scenes/test.json");
+	if (argc != 2)
+	{
+		fmt::print("ERROR: usage: {} <scene-file>\n", argv[0]);
+		return -1;
+	}
+	auto world = load_scene(argv[1]);
 
 	auto jitter = std::uniform_real_distribution<double>(0., 1.);
 
