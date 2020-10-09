@@ -59,6 +59,13 @@ std::shared_ptr<Geometry> parse_object(const json &j)
 		return std::make_shared<Sphere>(j["origin"].get<vec3>(),
 		                                j["radius"].get<double>(), mat);
 	}
+	if (j["type"] == "torus")
+	{
+		Material mat = parse_material(j["material"]);
+		return std::make_shared<Torus>(j.value<vec3>("origin", {0, 0, 0}),
+		                               j.value<double>("radius", 1.0),
+		                               j.value("radius2", 0.5), mat);
+	}
 	else if (j["type"] == "plane")
 	{
 		Material mat = parse_material(j["material"]);

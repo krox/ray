@@ -102,6 +102,61 @@ class Cylinder : public Geometry
 	}
 };
 
+std::array<double, 4> solve_quartic(double b, double c, double d, double e);
+
+class Torus : public Geometry
+{
+	vec3 origin_;
+	double radius_;  // R
+	double radius2_; // r
+	double R2_, r2_, xi_;
+	Material material_;
+
+  public:
+	Torus(vec3 const &origin, double radius, double radius2,
+	      Material const &material)
+	    : origin_(origin), radius_(radius), radius2_(radius2),
+	      material_(material)
+	{
+		R2_ = radius_ * radius_;
+		r2_ = radius2_ * radius2_;
+		xi_ = R2_ - r2_;
+	}
+
+	bool intersect(Ray const &ray, Hit &hit) const override
+	{
+		// create equation in the form a*t^4 + b*t^3 + c*t^2 + d*t + c = 0
+		vec3 oc = ray.origin - origin_;
+		auto alpha = glm::dot(ray.dir, ray.dir);
+		auto beta = glm::dot(oc, ray.dir);
+		auto sigma = glm::dot(oc, oc) - xi_;
+		auto a = alpha * alpha;
+		auto b = 4. * alpha * beta;
+		auto c = 2. * alpha * sigma + 4. * beta * beta +
+		         4. * R2_ * ray.dir.z * ray.dir.z;
+		auto d = 4. * beta * sigma + 8. * R2_ * oc.z * ray.dir.z;
+		auto e = sigma * sigma - 4. * R2_ * (r2_ - oc.z * oc.z);
+
+		std::array<double, 4> sols = solve_quartic(b / a, c / a, d / a, e / a);
+		double t = 0.0 / 0.0;
+		for (double sol : sols)
+			if (sol > 0 && sol < hit.t && !(sol > t))
+				t = sol;
+		if (!(t == t))
+			return false;
+
+		hit.t = t;
+		hit.point = ray(t);
+		auto p = hit.point - origin_;
+
+		auto ss = glm::dot(p, p);
+		auto tmp = vec3(ss - xi_, ss - xi_, ss - xi_ + 2 * radius_ * radius2_);
+		hit.normal = glm::normalize(p * tmp);
+		hit.material = &material_;
+		return true;
+	}
+};
+
 class Plane : public Geometry
 {
 	vec3 origin_, normal_;
