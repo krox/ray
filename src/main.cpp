@@ -53,27 +53,14 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 		assert(hit.material != nullptr);
 		auto &mat = *hit.material;
 
-		vec3 color = {0, 0, 0};
-		if (mat.glow)
-			color += mat.glow->sample(hit.uv);
-		if (mat.diffuse)
+		vec3 color = mat.glow(ray.dir, hit.normal, hit.uv);
+
+		vec3 attenuation;
+		vec3 new_dir;
+		if (mat.scatter(ray.dir, hit.normal, hit.uv, new_dir, attenuation, rng))
 		{
-			auto new_ray = Ray(hit.point, hit.normal + random_sphere(rng));
-			new_ray.origin = new_ray(0.001);
-			auto albedo = mat.diffuse->sample(hit.uv);
-			color += albedo * sample(world, new_ray, depth - 1);
-		}
-		if (mat.reflective)
-		{
-			auto new_ray = Ray(
-			    hit.point, glm::normalize(glm::reflect(ray.dir, hit.normal)) +
-			                   mat.fuzz * random_sphere(rng));
-			if (glm::dot(new_ray.dir, hit.normal) > 0)
-			{
-				new_ray.origin = new_ray(0.001);
-				auto albedo = mat.reflective->sample(hit.uv);
-				color += albedo * sample(world, new_ray, depth - 1);
-			}
+			auto new_ray = Ray(hit.point, new_dir);
+			color += attenuation * sample(world, new_ray, depth - 1);
 		}
 		return color;
 	}

@@ -5,6 +5,8 @@
 #include "fmt/format.h"
 #include "util/random.h"
 #include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 namespace ray {
 
@@ -60,3 +62,19 @@ template <> struct fmt::formatter<ray::Ray>
 		return format_to(ctx.out(), "{} -> {}", r.origin, r.dir);
 	}
 };
+
+namespace nlohmann {
+
+template <> struct adl_serializer<glm::dvec3>
+{
+	static void to_json(json &j, const glm::dvec3 &v) { j = {v.x, v.y, v.z}; }
+	static void from_json(const json &j, glm::dvec3 &v)
+	{
+		if (!j.is_array() || j.size() != 3)
+			throw std::runtime_error("error parsing json to vec3");
+		v = glm::dvec3{j[0].get<double>(), j[1].get<double>(),
+		               j[2].get<double>()};
+	}
+};
+
+} // namespace nlohmann
