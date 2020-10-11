@@ -37,7 +37,7 @@ class Camera
 RNG rng = {};
 
 /** take a single color sample */
-vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
+vec3 sample(GeometrySet const &world, Ray const &ray, int depth = 10)
 {
 	if (depth < 0)
 		return vec3{0, 0, 0};

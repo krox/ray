@@ -18,6 +18,7 @@ class Material
 	                        vec3 &out, vec3 &attenuation, RNG &rng) const;
 
   public:
+	explicit Material(){};
 	explicit Material(json const &j);
 	vec3 glow(vec3 const &in, vec3 const &normal, vec2 const &uv) const;
 	bool scatter(vec3 const &in, vec3 const &normal, vec2 const &uv, vec3 &out,
