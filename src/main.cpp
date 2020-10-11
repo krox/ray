@@ -1,3 +1,4 @@
+#include "CLI/CLI.hpp"
 #include "ray/geometry.h"
 #include "ray/scene.h"
 #include "ray/types.h"
@@ -72,32 +73,40 @@ vec3 sample(Geometry const &world, Ray const &ray, int depth = 10)
 
 int main(int argc, char *argv[])
 {
-	auto image_raw = std::vector<vec3>(640 * 480, vec3{0, 0, 0});
-	auto image = util::ndspan<vec3, 2>(image_raw, {480, 640});
+	std::string scene_filename;
+	int sample_count = 100;
+	int width = 640, height = 480;
+
+	CLI::App app{"ray tracer"};
+	app.add_option("scene", scene_filename, "scene file in json format")
+	    ->required();
+	app.add_option("--samples", sample_count, "samples per pixel");
+	app.add_option("--width", width, "width in pixels");
+	app.add_option("--height", height, "height in pixels");
+	CLI11_PARSE(app, argc, argv);
+
+	auto image_raw = std::vector<vec3>(width * height, vec3{0, 0, 0});
+	auto image =
+	    util::ndspan<vec3, 2>(image_raw, {(size_t)height, (size_t)width});
 
 	double fov = 3.141592654 * 0.5;
-	auto camera = Camera({0, -2, 0.5}, {0, 0, 0.5}, fov, 640. / 480.);
+	auto camera =
+	    Camera({0, -2, 0.5}, {0, 0, 0.5}, fov, (double)width / height);
 
-	if (argc != 2)
-	{
-		fmt::print("ERROR: usage: {} <scene-file>\n", argv[0]);
-		return -1;
-	}
-	auto world = load_scene(argv[1]);
+	auto world = load_scene(scene_filename);
 
 	auto jitter = std::uniform_real_distribution<double>(0., 1.);
 
-	auto window = Window("Result", 640, 480);
+	auto window = Window("Result", width, height);
 
-	int sample_count = 100;
 	for (int sample_iter = 1; sample_iter <= sample_count && !window.quit;
 	     ++sample_iter)
 	{
-		for (int i = 0; i < 480; ++i)
-			for (int j = 0; j < 640; ++j)
+		for (int i = 0; i < height; ++i)
+			for (int j = 0; j < width; ++j)
 			{
-				auto ray = camera.ray((j + jitter(rng)) / 640.,
-				                      (i + jitter(rng)) / 480.);
+				auto ray = camera.ray((j + jitter(rng)) / width,
+				                      (i + jitter(rng)) / height);
 				image(i, j) += sample(world, ray);
 			}
 		window.update(image, 1. / sample_iter);

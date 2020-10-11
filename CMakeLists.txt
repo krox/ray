@@ -10,11 +10,13 @@ add_subdirectory(util)
 add_subdirectory(fmt)
 add_subdirectory(glm)
 add_subdirectory(json)
+add_subdirectory(CLI11)
 
 include_directories(src)
 include_directories(util/src)
 include_directories(util/src)
 include_directories(glm)
+include_directories(CLI11/include)
 
 file(GLOB files_cpp "src/*/*.cpp")
 
