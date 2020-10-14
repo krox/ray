@@ -37,10 +37,19 @@ class Camera
 RNG rng = {};
 
 /** take a single color sample */
-vec3 sample(GeometrySet const &world, Ray const &ray, int depth = 10)
+vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
+            int depth)
 {
 	if (depth < 0)
 		return vec3{0, 0, 0};
+
+	if (glm::length(attenuation) < 1.)
+	{
+		if (std::bernoulli_distribution(glm::length(attenuation))(rng))
+			attenuation /= glm::length(attenuation);
+		else
+			return {0, 0, 0};
+	}
 
 	Hit hit;
 	hit.t = std::numeric_limits<double>::infinity();
@@ -56,14 +65,20 @@ vec3 sample(GeometrySet const &world, Ray const &ray, int depth = 10)
 
 		vec3 color = mat.glow(ray.dir, hit.normal, hit.uv);
 
-		vec3 attenuation;
+		vec3 att;
 		vec3 new_dir;
-		if (mat.scatter(ray.dir, hit.normal, hit.uv, new_dir, attenuation, rng))
+		if (mat.scatter_diffuse(ray.dir, hit.normal, hit.uv, new_dir, att, rng))
 		{
 			auto new_ray = Ray(hit.point, new_dir);
-			color += attenuation * sample(world, new_ray, depth - 1);
+			color += sample(world, new_ray, attenuation * att, depth - 1);
 		}
-		return color;
+		if (mat.scatter_reflective(ray.dir, hit.normal, hit.uv, new_dir, att,
+		                           rng))
+		{
+			auto new_ray = Ray(hit.point, new_dir);
+			color += sample(world, new_ray, attenuation * att, depth - 1);
+		}
+		return color * attenuation;
 	}
 
 	return {0, 0, 0};
@@ -107,7 +122,7 @@ int main(int argc, char *argv[])
 			{
 				auto ray = camera.ray((j + jitter(rng)) / width,
 				                      (i + jitter(rng)) / height);
-				image(i, j) += sample(world, ray);
+				image(i, j) += sample(world, ray, vec3(1, 1, 1), 10);
 			}
 		window.update(image, 1. / sample_iter);
 

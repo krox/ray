@@ -43,7 +43,8 @@ bool Material::scatter_diffuse(vec3 const &in, vec3 const &normal,
                                RNG &rng) const
 {
 	(void)in;
-	assert(diffuse_);
+	if (!diffuse_)
+		return false;
 	out = glm::normalize(normal + random_sphere(rng));
 	attenuation = diffuse_->sample(uv);
 	return true;
@@ -53,7 +54,8 @@ bool Material::scatter_reflective(vec3 const &in, vec3 const &normal,
                                   vec2 const &uv, vec3 &out, vec3 &attenuation,
                                   RNG &rng) const
 {
-	assert(reflective_);
+	if (!reflective_)
+		return false;
 
 	out = glm::normalize(glm::reflect(in, normal));
 	out += fuzz_ * random_sphere(rng);
@@ -64,33 +66,6 @@ bool Material::scatter_reflective(vec3 const &in, vec3 const &normal,
 
 	attenuation = reflective_->sample(uv);
 	return true;
-}
-
-bool Material::scatter(vec3 const &in, vec3 const &normal, vec2 const &uv,
-                       vec3 &out, vec3 &attenuation, RNG &rng) const
-{
-	if (diffuse_)
-	{
-		if (reflective_)
-		{
-			bool r;
-			if (std::bernoulli_distribution(0.5)(rng))
-				r = scatter_diffuse(in, normal, uv, out, attenuation, rng);
-			else
-				r = scatter_reflective(in, normal, uv, out, attenuation, rng);
-			attenuation *= 2;
-			return r;
-		}
-		else
-			return scatter_diffuse(in, normal, uv, out, attenuation, rng);
-	}
-	else
-	{
-		if (reflective_)
-			return scatter_reflective(in, normal, uv, out, attenuation, rng);
-		else
-			return false;
-	}
 }
 
 } // namespace ray
