@@ -34,6 +34,14 @@ std::shared_ptr<Geometry> parse_object(const json &j)
 		auto height = j.value<double>("height", 1.0);
 		geom = std::make_shared<Cylinder>(radius, height, mat);
 	}
+	else if (j["type"] == "torus_knot")
+	{
+		auto p = j.at("p").get<int>();
+		auto q = j.at("q").get<int>();
+		auto n = j.at("n").get<int>();
+		auto m = j.at("m").get<int>();
+		geom = torus_knot(p, q, n, m, mat);
+	}
 	else
 		assert(false);
 

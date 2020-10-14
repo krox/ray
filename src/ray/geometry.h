@@ -222,6 +222,101 @@ class Plane : public Geometry
 	}
 };
 
+/**
+ * computes ray <-> triangle intersection with Möller–Trumbore algorithm. I.e.
+ * solve linear equation: ray(t) == origin + u edge1 + v edge2
+ * with barycentric coordinates: 0 <= u,v,u+v <= 1
+ */
+bool triangle_intersect(Ray const &ray, vec3 const &origin, vec3 const &edge1,
+                        vec3 const &edge2, double &t, double &u, double &v);
+
+/** triangle based mesh */
+class Mesh : public Geometry
+{
+  private:
+	std::vector<vec3> co_;
+	std::vector<vec3> no_;
+	std::vector<std::array<int, 3>> tris_;
+
+  public:
+	Mesh(std::vector<vec3> const &co, std::vector<vec3> const &no,
+	     std::vector<std::array<int, 3>> tris, Material const &material)
+	    : Geometry(material), co_(co), no_(no), tris_(tris)
+	{}
+
+	bool intersect_internal(Ray const &ray, Hit &hit) const override
+	{
+		bool r = false;
+		for (auto [a, b, c] : tris_)
+		{
+			double t, u, v;
+			if (!triangle_intersect(ray, co_[a], co_[b] - co_[a],
+			                        co_[c] - co_[a], t, u, v))
+				continue;
+			if (t <= 0 || t > hit.t)
+				continue;
+			hit.t = t;
+			hit.point = ray(t);
+			// hit.normal = glm::cross(b - a, c - a); // flat-shading
+			hit.normal = no_[a] + u * (no_[b] - no_[a]) + v * (no_[c] - no_[a]);
+			r = true;
+		}
+
+		return r;
+	}
+};
+
+template <typename F>
+std::shared_ptr<Mesh> build_parametric(F &&f, int n, int m,
+                                       Material const &material)
+{
+	auto co = std::vector<vec3>((n + 1) * (m + 1));
+	auto no = std::vector<vec3>((n + 1) * (m + 1));
+	auto uv = std::vector<vec2>((n + 1) * (m + 1));
+	auto tris = std::vector<std::array<int, 3>>();
+
+	for (int i = 0; i < n + 1; ++i)
+		for (int j = 0; j < m + 1; ++j)
+		{
+			int t = i * (m + 1) + j;
+			uv[t] = vec2{1. / n * i, 1. / m * j};
+			f(co[t], no[t], uv[t]);
+		}
+
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < m; ++j)
+		{
+			int a = i * (m + 1) + j;
+			int b = (i + 1) * (m + 1) + j;
+			int c = (i + 1) * (m + 1) + j + 1;
+			int d = i * (m + 1) + j + 1;
+			tris.push_back({a, b, c});
+			tris.push_back({a, c, d});
+		}
+
+	return std::make_shared<Mesh>(co, no, tris, material);
+}
+
+inline std::shared_ptr<Mesh> torus_knot(int p, int q, int n, int m,
+                                        Material const &material)
+{
+	auto eval = [&](vec3 &co, vec3 &no, vec2 &uv) {
+		double r = 0.05;
+		double r2 = 0.2;
+		float t = (uv.x * 2 + 0.5) * 3.141592654;
+		float o = (uv.y * 2 - 1) * 3.141592654;
+
+		co.x = (1 + r2 * std::cos(p * t) + r * std::cos(o)) * std::cos(q * t);
+		co.y = (1 + r2 * std::cos(p * t) + r * std::cos(o)) * std::sin(q * t);
+		co.z = r2 * std::sin(p * t) + r * std::sin(o);
+
+		no.x = cos(q * t) * cos(o);
+		no.y = sin(q * t) * cos(o);
+		no.z = sin(o);
+	};
+	return build_parametric(eval, n, m, material);
+}
+
 class GeometrySet
 {
 	std::vector<std::shared_ptr<const Geometry>> objects_;

@@ -89,4 +89,33 @@ std::array<double, 4> solve_quartic(double b, double c, double d, double e)
 	return sols;
 }
 
+bool triangle_intersect(Ray const &ray, vec3 const &origin, vec3 const &edge1,
+                        vec3 const &edge2, double &t, double &u, double &v)
+{
+	// system of equations is:
+	// ray.origin -origin = -ray.dir * t  + edge1 * u + edge2 * v
+	vec3 tmp1 = glm::cross(ray.dir, edge2);
+	double det = glm::dot(edge1, tmp1);
+
+	// det = 0 is parallel ray, det < 0 is backface
+	// if (std::fabs(det) < 1e-6)
+	if (det < 1e-8)
+		return false;
+
+	double invDet = 1 / det;
+
+	vec3 b = ray.origin - origin;
+	u = glm::dot(b, tmp1) * invDet;
+	if (u < 0 || u > 1)
+		return false;
+
+	vec3 tmp2 = glm::cross(b, edge1);
+	v = glm::dot(ray.dir, tmp2) * invDet;
+	if (v < 0 || u + v > 1)
+		return false;
+
+	t = glm::dot(edge2, tmp2) * invDet;
+	return true;
+}
+
 } // namespace ray
