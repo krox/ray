@@ -5,6 +5,7 @@
 #include "ray/window.h"
 #include "util/random.h"
 #include "util/span.h"
+#include "util/stopwatch.h"
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -35,6 +36,7 @@ class Camera
 };
 
 RNG rng = {};
+int64_t ray_count = 0; // total number of rays shot
 
 /** take a single color sample */
 vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
@@ -50,6 +52,8 @@ vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
 		else
 			return {0, 0, 0};
 	}
+
+	ray_count += 1;
 
 	Hit hit;
 	hit.t = std::numeric_limits<double>::infinity();
@@ -88,6 +92,11 @@ vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
 
 int main(int argc, char *argv[])
 {
+	util::Stopwatch sw_setup, sw_display, sw_tracer, sw_total;
+
+	sw_total.start();
+	sw_setup.start();
+
 	std::string scene_filename;
 	int sample_count = 100;
 	int width = 640, height = 480;
@@ -101,8 +110,11 @@ int main(int argc, char *argv[])
 	CLI11_PARSE(app, argc, argv);
 
 	auto image_raw = std::vector<vec3>(width * height, vec3{0, 0, 0});
+	auto imageSq_raw = std::vector<vec3>(width * height, vec3{0, 0, 0});
 	auto image =
 	    util::ndspan<vec3, 2>(image_raw, {(size_t)height, (size_t)width});
+	auto imageSq =
+	    util::ndspan<vec3, 2>(imageSq_raw, {(size_t)height, (size_t)width});
 
 	double fov = 3.141592654 * 0.5;
 	auto camera =
@@ -114,22 +126,63 @@ int main(int argc, char *argv[])
 
 	auto window = Window("Result", width, height);
 
+	sw_setup.stop();
+
 	for (int sample_iter = 1; sample_iter <= sample_count && !window.quit;
 	     ++sample_iter)
 	{
+		sw_tracer.start();
 		for (int i = 0; i < height; ++i)
 			for (int j = 0; j < width; ++j)
 			{
 				auto ray = camera.ray((j + jitter(rng)) / width,
 				                      (i + jitter(rng)) / height);
-				image(i, j) += sample(world, ray, vec3(1, 1, 1), 10);
+				vec3 color = sample(world, ray, vec3(1, 1, 1), 10);
+				image(i, j) += color;
+				imageSq(i, j) += color * color;
 			}
+		sw_tracer.stop();
+		sw_display.start();
 		window.update(image, 1. / sample_iter);
+		sw_display.stop();
 
 		fmt::print("{} / {}\r", sample_iter, sample_count);
 		std::cout.flush();
 	}
+
+	double noise_sum = 0;
+	double noise_max = 0;
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+			for (int c = 0; c < 3; ++c)
+			{
+				double noise = imageSq(i, j)[c] -
+				               image(i, j)[c] * image(i, j)[c] / sample_count;
+				noise /= sample_count * std::sqrt((double)sample_count);
+				noise_sum += noise;
+				noise_max = std::max(noise_max, noise);
+			}
+
+	sw_total.stop();
 	fmt::print("\nall done\n");
+	fmt::print("--------------- statistics ---------------\n");
+	fmt::print("rays total      = {}\n", ray_count);
+	fmt::print("rays per pixel  = {:.3f}\n",
+	           (double)ray_count / (width * height));
+	fmt::print("rays per sample = {:.3f}\n",
+	           (double)ray_count / ((double)width * height * sample_count));
+	fmt::print("rays per second = {:.3f} M\n",
+	           ray_count / sw_tracer.secs() / 1000000.);
+	fmt::print("noise = {:.0f} ppm avg, {:.0f} ppm max\n",
+	           noise_sum / (3 * width * height) * 1e6, noise_max * 1e6);
+	fmt::print("---------------   timing   ---------------\n");
+	fmt::print("setup   = {:.3f} s ({:#4.1f} %)\n", sw_setup.secs(),
+	           sw_setup.secs() / sw_total.secs() * 100);
+	fmt::print("tracer  = {:.3f} s ({:#4.1f} %)\n", sw_tracer.secs(),
+	           sw_tracer.secs() / sw_total.secs() * 100);
+	fmt::print("display = {:.3f} s ({:#4.1f} %%)\n", sw_display.secs(),
+	           sw_display.secs() / sw_total.secs() * 100);
+	fmt::print("total   = {:.3f} s\n", sw_total.secs());
 
 	window.join();
 	return 0;
