@@ -1,5 +1,6 @@
 #include "CLI/CLI.hpp"
 #include "ray/geometry.h"
+#include "ray/image.h"
 #include "ray/scene.h"
 #include "ray/types.h"
 #include "ray/window.h"
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
 	sw_setup.start();
 
 	std::string scene_filename;
+	std::string output_filename = "";
 	int sample_count = 100;
 	int width = 640, height = 480;
 
@@ -107,6 +109,8 @@ int main(int argc, char *argv[])
 	app.add_option("--samples", sample_count, "samples per pixel");
 	app.add_option("--width", width, "width in pixels");
 	app.add_option("--height", height, "height in pixels");
+	app.add_option("-o", output_filename,
+	               "output image file. Supported formats: png, bmp, tga, jpg");
 	CLI11_PARSE(app, argc, argv);
 
 	auto image_raw = std::vector<vec3>(width * height, vec3{0, 0, 0});
@@ -150,18 +154,24 @@ int main(int argc, char *argv[])
 		std::cout.flush();
 	}
 
+	image /= (double)sample_count;
+	imageSq /= (double)sample_count;
+
 	double noise_sum = 0;
 	double noise_max = 0;
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
 			for (int c = 0; c < 3; ++c)
 			{
-				double noise = imageSq(i, j)[c] -
-				               image(i, j)[c] * image(i, j)[c] / sample_count;
-				noise /= sample_count * std::sqrt((double)sample_count);
+				double noise =
+				    imageSq(i, j)[c] - image(i, j)[c] * image(i, j)[c];
+				noise /= std::sqrt((double)sample_count);
 				noise_sum += noise;
 				noise_max = std::max(noise_max, noise);
 			}
+
+	if (output_filename.size())
+		write_image(output_filename, image, 2.2);
 
 	sw_total.stop();
 	fmt::print("\nall done\n");
