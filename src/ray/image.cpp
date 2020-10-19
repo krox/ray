@@ -16,8 +16,8 @@ void write_image(std::string const &filename, util::ndspan<vec3, 2> image,
 	auto width = (int)image.shape(1);
 	std::vector<uint8_t> buf;
 	buf.resize(image.size() * 3);
-	for (int i = 0; i < image.shape(0); ++i)
-		for (int j = 0; j < image.shape(1); ++j)
+	for (size_t i = 0; i < image.shape(0); ++i)
+		for (size_t j = 0; j < image.shape(1); ++j)
 			for (int c = 0; c < 3; ++c)
 			{
 				auto tmp = image(i, j)[c];

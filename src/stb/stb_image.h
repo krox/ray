@@ -4120,7 +4120,7 @@ static int stbi__zhuffman_decode_slowpath(stbi__zbuf *a, stbi__zhuffman *z)
    if (s >= 16) return -1; // invalid code!
    // code size is s, so:
    b = (k >> (16-s)) - z->firstcode[s] + z->firstsymbol[s];
-   if (b >= sizeof (z->size)) return -1; // some data was corrupt somewhere!
+   if (b >= (int)sizeof (z->size)) return -1; // some data was corrupt somewhere!
    if (z->size[b] != s) return -1;  // was originally an assert, but report failure instead.
    a->code_buffer >>= s;
    a->num_bits -= s;
@@ -6794,6 +6794,7 @@ static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y,
 
             if (out) {
                void *tmp = (stbi_uc*) STBI_REALLOC_SIZED( out, out_size, layers * stride );
+               (void)out_size; // silence unused-warning
                if (NULL == tmp) {
                   STBI_FREE(g.out);
                   STBI_FREE(g.history);
@@ -6807,6 +6808,7 @@ static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y,
 
                if (delays) {
                   *delays = (int*) STBI_REALLOC_SIZED( *delays, delays_size, sizeof(int) * layers );
+                  (void)delays_size; // silence unused-warning
                   delays_size = layers * sizeof(int);
                }
             } else {

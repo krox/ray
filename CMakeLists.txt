@@ -4,7 +4,7 @@ project (ray)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra -Werror -pedantic -Wno-sign-compare -Wno-unused-but-set-variable -Wno-unused-local-typedefs -Wno-unused-result -Wno-missing-field-initializers -Wno-type-limits")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra -Werror -pedantic -Wno-type-limits -std=c++2a")
 
 add_subdirectory(util)
 add_subdirectory(fmt)
