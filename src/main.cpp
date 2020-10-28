@@ -22,11 +22,11 @@ class Camera
   public:
 	Camera(vec3 origin, vec3 at, double fov, double aspect) : origin_(origin)
 	{
-		auto dir = glm::normalize(at - origin);
-		right_ = glm::normalize(glm::cross(dir, vec3(0, 0, 1)));
-		right_ *= 2.0 * glm::tan(fov / 2.0);
-		down_ = glm::normalize(cross(dir, right_));
-		down_ *= glm::length(right_) / aspect;
+		auto dir = util::normalize(at - origin);
+		right_ = util::normalize(util::cross(dir, vec3(0, 0, 1)));
+		right_ *= 2.0 * std::tan(fov / 2.0);
+		down_ = util::normalize(cross(dir, right_));
+		down_ *= util::length(right_) / aspect;
 		corner_ = dir - 0.5 * down_ - 0.5 * right_;
 	}
 
@@ -46,10 +46,10 @@ vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
 	if (depth < 0)
 		return vec3{0, 0, 0};
 
-	if (glm::length(attenuation) < 1.)
+	if (util::length(attenuation) < 1.)
 	{
-		if (std::bernoulli_distribution(glm::length(attenuation))(rng))
-			attenuation /= glm::length(attenuation);
+		if (std::bernoulli_distribution(util::length(attenuation))(rng))
+			attenuation /= util::length(attenuation);
 		else
 			return {0, 0, 0};
 	}
@@ -60,9 +60,9 @@ vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
 	hit.t = std::numeric_limits<double>::infinity();
 	if (world.intersect(ray, hit))
 	{
-		if (glm::dot(hit.normal, ray.dir) > 0) // should never happen (?)
+		if (util::dot(hit.normal, ray.dir) > 0) // should never happen (?)
 			hit.normal *= -1.0;
-		assert(glm::abs(glm::length(hit.normal) - 1.0) < 0.0001);
+		assert(std::abs(util::length(hit.normal) - 1.0) < 0.0001);
 		if (hit.material == nullptr)
 			return vec3{1, 0, 1};
 		assert(hit.material != nullptr);
@@ -87,7 +87,7 @@ vec3 sample(GeometrySet const &world, Ray const &ray, vec3 attenuation,
 	}
 
 	return {0, 0, 0};
-	// auto t = 0.5 * (glm::normalize(ray.dir).z + 1.0);
+	// auto t = 0.5 * (util::normalize(ray.dir).z + 1.0);
 	// return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 }
 

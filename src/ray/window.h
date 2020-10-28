@@ -18,7 +18,7 @@ inline uint8_t convert_color(double x)
 		return 0;
 	if (x >= 1.0)
 		return 255;
-	x = glm::sqrt(x); // basic gamma-correction
+	x = std::sqrt(x); // basic gamma-correction
 	return (uint8_t)(x * 255.99);
 }
 

@@ -40,7 +40,8 @@ class Geometry
 		{
 			// transform hit from model-space to world-space
 			hit.point = rot_ * hit.point + origin_;
-			hit.normal = glm::normalize(glm::transpose(rot_inv_) * hit.normal);
+			hit.normal =
+			    util::normalize(util::transpose(rot_inv_) * hit.normal);
 			hit.material = &material_;
 			return true;
 		}
@@ -51,32 +52,32 @@ class Geometry
 	void rotatex(double alpha)
 	{
 		auto rot = mat3(1.0);
-		rot[1][1] = std::cos(alpha);
-		rot[1][2] = std::sin(alpha);
-		rot[2][1] = -std::sin(alpha);
-		rot[2][2] = std::cos(alpha);
+		rot(1, 1) = std::cos(alpha);
+		rot(1, 2) = std::sin(alpha);
+		rot(2, 1) = -std::sin(alpha);
+		rot(2, 2) = std::cos(alpha);
 		rot_ = rot * rot_;
-		rot_inv_ = glm::inverse(rot_);
+		rot_inv_ = util::inverse(rot_);
 	}
 	void rotatey(double alpha)
 	{
 		auto rot = mat3(1.0);
-		rot[0][0] = std::cos(alpha);
-		rot[0][2] = -std::sin(alpha);
-		rot[2][0] = std::sin(alpha);
-		rot[2][2] = std::cos(alpha);
+		rot(0, 0) = std::cos(alpha);
+		rot(0, 2) = -std::sin(alpha);
+		rot(2, 0) = std::sin(alpha);
+		rot(2, 2) = std::cos(alpha);
 		rot_ = rot * rot_;
-		rot_inv_ = glm::inverse(rot_);
+		rot_inv_ = util::inverse(rot_);
 	}
 	void rotatez(double alpha)
 	{
 		auto rot = mat3(1.0);
-		rot[0][0] = std::cos(alpha);
-		rot[0][1] = std::sin(alpha);
-		rot[1][0] = -std::sin(alpha);
-		rot[1][1] = std::cos(alpha);
+		rot(0, 0) = std::cos(alpha);
+		rot(0, 1) = std::sin(alpha);
+		rot(1, 0) = -std::sin(alpha);
+		rot(1, 1) = std::cos(alpha);
 		rot_ = rot * rot_;
-		rot_inv_ = glm::inverse(rot_);
+		rot_inv_ = util::inverse(rot_);
 	}
 };
 
@@ -92,21 +93,21 @@ class Sphere : public Geometry
 	bool intersect_internal(Ray const &ray, Hit &hit) const override
 	{
 		// create equation in the form a*t^2 + 2*b*t + c = 0
-		auto a = glm::dot(ray.dir, ray.dir);
-		auto b = glm::dot(ray.origin, ray.dir);
-		auto c = glm::dot(ray.origin, ray.origin) - radius_ * radius_;
+		auto a = util::dot(ray.dir, ray.dir);
+		auto b = util::dot(ray.origin, ray.dir);
+		auto c = util::dot(ray.origin, ray.origin) - radius_ * radius_;
 		auto d = b * b - a * c;
 
 		if (d < 0)
 			return false;
 
-		double t = (-b - glm::sqrt(d)) / a;
+		double t = (-b - std::sqrt(d)) / a;
 		if (t <= 0 || t > hit.t)
 			return false;
 
 		hit.t = t;
 		hit.point = ray(hit.t);
-		hit.normal = glm::normalize(hit.point);
+		hit.normal = util::normalize(hit.point);
 		return true;
 	}
 };
@@ -126,15 +127,15 @@ class Cylinder : public Geometry
 		// create equation in the form a*t^2 + 2*b*t + c = 0
 		auto oc_xy = vec2(ray.origin.x, ray.origin.y);
 		auto dir_xy = vec2(ray.dir.x, ray.dir.y);
-		auto a = glm::dot(dir_xy, dir_xy);
-		auto b = glm::dot(oc_xy, dir_xy);
-		auto c = glm::dot(oc_xy, oc_xy) - radius_ * radius_;
+		auto a = util::dot(dir_xy, dir_xy);
+		auto b = util::dot(oc_xy, dir_xy);
+		auto c = util::dot(oc_xy, oc_xy) - radius_ * radius_;
 		auto d = b * b - a * c;
 
 		if (d < 0)
 			return false; // miss infinite cylinder
 
-		double t = (-b - glm::sqrt(d)) / a;
+		double t = (-b - std::sqrt(d)) / a;
 
 		// point not in relevant ray segment
 		if (t <= 0 || t > hit.t)
@@ -146,7 +147,7 @@ class Cylinder : public Geometry
 
 		hit.t = t;
 		hit.point = p;
-		hit.normal = glm::normalize(vec3{p.x, p.y, 0.});
+		hit.normal = util::normalize(vec3{p.x, p.y, 0.});
 		return true;
 	}
 };
@@ -171,9 +172,9 @@ class Torus : public Geometry
 	bool intersect_internal(Ray const &ray, Hit &hit) const override
 	{
 		// create equation in the form a*t^4 + b*t^3 + c*t^2 + d*t + c = 0
-		auto alpha = glm::dot(ray.dir, ray.dir);
-		auto beta = glm::dot(ray.origin, ray.dir);
-		auto sigma = glm::dot(ray.origin, ray.origin) - xi_;
+		auto alpha = util::dot(ray.dir, ray.dir);
+		auto beta = util::dot(ray.origin, ray.dir);
+		auto sigma = util::dot(ray.origin, ray.origin) - xi_;
 		auto a = alpha * alpha;
 		auto b = 4. * alpha * beta;
 		auto c = 2. * alpha * sigma + 4. * beta * beta +
@@ -192,9 +193,9 @@ class Torus : public Geometry
 		hit.t = t;
 		hit.point = ray(t);
 
-		auto ss = glm::dot(hit.point, hit.point);
+		auto ss = util::dot(hit.point, hit.point);
 		auto tmp = vec3(ss - xi_, ss - xi_, ss - xi_ + 2 * radius_ * radius2_);
-		hit.normal = glm::normalize(hit.point * tmp);
+		hit.normal = util::normalize(hit.point * tmp);
 		return true;
 	}
 };
@@ -210,7 +211,8 @@ class Plane : public Geometry
 
 	bool intersect_internal(Ray const &ray, Hit &hit) const override
 	{
-		double t = -glm::dot(ray.origin, normal_) / glm::dot(ray.dir, normal_);
+		double t =
+		    -util::dot(ray.origin, normal_) / util::dot(ray.dir, normal_);
 		if (t <= 0 || t > hit.t)
 			return false;
 
@@ -257,7 +259,7 @@ class Mesh : public Geometry
 				continue;
 			hit.t = t;
 			hit.point = ray(t);
-			// hit.normal = glm::cross(b - a, c - a); // flat-shading
+			// hit.normal = util::cross(b - a, c - a); // flat-shading
 			hit.normal = no_[a] + u * (no_[b] - no_[a]) + v * (no_[c] - no_[a]);
 			r = true;
 		}

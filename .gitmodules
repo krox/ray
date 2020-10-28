@@ -4,9 +4,6 @@
 [submodule "fmt"]
 	path = fmt
 	url = git@github.com:fmtlib/fmt
-[submodule "glm"]
-	path = glm
-	url = git@github.com:g-truc/glm.git
 [submodule "json"]
 	path = json
 	url = git@github.com:nlohmann/json

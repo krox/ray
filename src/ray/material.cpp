@@ -45,7 +45,7 @@ bool Material::scatter_diffuse(vec3 const &in, vec3 const &normal,
 	(void)in;
 	if (!diffuse_)
 		return false;
-	out = glm::normalize(normal + random_sphere(rng));
+	out = util::normalize(normal + random_sphere(rng));
 	attenuation = diffuse_->sample(uv);
 	return true;
 }
@@ -57,11 +57,11 @@ bool Material::scatter_reflective(vec3 const &in, vec3 const &normal,
 	if (!reflective_)
 		return false;
 
-	out = glm::normalize(glm::reflect(in, normal));
+	out = util::normalize(util::reflect(in, normal));
 	out += fuzz_ * random_sphere(rng);
-	out = glm::normalize(out);
+	out = util::normalize(out);
 
-	if (glm::dot(out, normal) <= 0)
+	if (util::dot(out, normal) <= 0)
 		return false;
 
 	attenuation = reflective_->sample(uv);
